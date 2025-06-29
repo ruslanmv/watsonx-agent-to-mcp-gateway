@@ -558,69 +558,126 @@ This is a simple HTML page with JavaScript to communicate with our gateway.
 
 ### Step 5: Run Everything\!
 
-Now we orchestrate all the pieces. You will need **three separate terminal windows**.
+Now we orchestrate all the pieces. You will need **three separate terminal windows** open, all starting from the root of your `mcp-watsonx-tutorial` project.
 
 **Terminal 1: Run the MCP Gateway**
+This terminal will run the central gateway service.
 
 ```bash
-# In the project root directory
+# Navigate to the gateway directory from the project root
 cd mcpgateway
-uvicorn cli:app --reload --port 8000
+
+# Activate the virtual environment
+source .venv/bin/activate
+
+# Set required environment variables for the gateway
+export BASIC_AUTH_USERNAME=admin
+export BASIC_AUTH_PASSWORD=changeme
+export JWT_SECRET_KEY=my-super-secret-key
+
+# Start the gateway on port 4444
+mcpgateway --host 0.0.0.0 --port 4444
 ```
+
+Leave this terminal running. You should see log messages from the gateway.
 
 **Terminal 2: Run the Go Time Server Agent**
+This terminal will run our simple utility agent.
 
 ```bash
-# In the project root directory
+# Navigate to the agent's directory from the project root
 cd agents/go_time_server
-go build -o time_server .
-./time_server
-# Should log: Starting Go time server on :8081
+
+# Initialize the Go module (only needed once)
+go mod init time-agent
+go mod tidy
+
+# Build and run the agent
+go run main.go
 ```
+
+This agent will now be running and logging: `Starting Go time server on :8081`.
 
 **Terminal 3: Run the Python Watsonx Agent**
+This terminal will run our main chatbot agent.
 
 ```bash
-# In the project root directory
+# Navigate to the agent's directory from the project root
 cd agents/python_watsonx_agent
-# Make sure you've set your IBM_API_KEY and WATSONX_PROJECT_ID
-python main.py
-# Should be running on port 8082
+
+# Activate the virtual environment
+source .venv/bin/activate
+
+# Run the FastAPI server using uvicorn
+uvicorn main:app --host 0.0.0.0 --port 8082
 ```
 
-### Step 6: Register the Agents
+This agent will now be running on port `8082`.
 
-With all services running, open a **fourth terminal** to register them with the gateway.
+### Step 6: Register the Agents with the Gateway
+
+With all three services running, open a **fourth terminal** to register the agents. The gateway needs to know the address of each agent to route requests correctly.
 
 1.  **Register the Go Time Server:**
+    *(Note: This agent runs on port `8081`)*
+
     ```bash
-    curl -X POST http://localhost:8000/servers \
+    curl -X POST http://localhost:4444/servers \
       -H "Content-Type: application/json" \
+      -u "admin:changeme" \
       -d '{
         "name": "go-time-agent",
-        "description": "Go service for time",
-        "endpoint": "http://localhost:8082/http",
-        "async": false
+        "description": "Go service for getting the current time",
+        "url": "http://localhost:8081/http"
       }'
     ```
+
 2.  **Register the Python Watsonx Agent:**
+    *(Note: This agent runs on port `8082`)*
+
     ```bash
-    curl -X POST http://localhost:8000/servers \
+    curl -X POST http://localhost:4444/servers \
       -H "Content-Type: application/json" \
+      -u "admin:changeme" \
       -d '{
         "name": "watsonx-agent",
         "description": "Python agent for watsonx.ai chat",
-        "endpoint": "http://localhost:8082/http",
-        "async": false
+        "url": "http://localhost:8082/http"
       }'
     ```
 
-### Step 7: Putting It All Together
+You should receive a confirmation response from the gateway for each command.
 
-You are now ready to test the full application.
+### Step 7: Test the Full Application
 
-1.  Open the `frontend/index.html` file in your web browser. You can usually do this by right-clicking the file and choosing "Open with Browser" or by typing `file:///path/to/your/project/frontend/index.html` in the URL bar.
-2.  Type a message into the chat box, such as "Hello\! What is the capital of France?" and press Send.
-3.  You should see your message appear on the right, and after a moment, the response from `watsonx.ai` will appear on the left.
+![](pic1.png)
 
-You have now successfully built a multi-agent application where a web frontend communicates through the MCP Gateway to a Python-based LLM agent.
+You are now ready to see everything work together.
+
+1.  **Update the Frontend URL:**
+    Before opening the frontend, you must ensure it points to the correct gateway port. Open the `frontend/index.html` file and find this line:
+    `const GATEWAY_URL = 'http://localhost:8000/call';`
+
+    Change it to point to port `4444`:
+    `const GATEWAY_URL = 'http://localhost:4444/call';`
+
+2.  **Open the Frontend:**
+    Open the `frontend/index.html` file in your web browser. You can usually do this by right-clicking the file and choosing "Open with Browser" or by typing `file:///path/to/your/project/frontend/index.html` in the URL bar.
+
+3.  **Chat with your Agent:**
+    Type a message into the chat box, such as "Hello\! Can you write a short poem about AI?" and press Send.
+
+    The request will travel from your browser to the MCP Gateway, which will see the `watsonx-agent/chat` tool request and correctly route it to your Python agent. The agent will call `watsonx.ai`, get the response, and send it back along the same path.
+
+### Conclusion: What You've Built
+
+Congratulations\! You have successfully built and orchestrated a complete multi-agent application.
+
+You have learned how to:
+
+  * Set up and run the **MCP Gateway** as a central service registry and proxy.
+  * Create two distinct **agents** in different programming languages (Go and Python).
+  * **Register** those agents with the gateway so they can be discovered and used.
+  * Build a simple **web frontend** that can interact with a specific agent through the unified gateway endpoint.
+
+This architecture is the foundation for building powerful, scalable, and maintainable AI systems. From here, you can add more specialized agents, explore advanced gateway features like security and caching, and build even more complex applications.
