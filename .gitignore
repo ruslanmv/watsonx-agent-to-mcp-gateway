@@ -1,0 +1,4 @@
+.env
+/agents/python_watsonx_agent/.venv
+/mcp-watsonx-tutorial/.venv
+/backup
