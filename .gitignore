@@ -3,3 +3,5 @@
 /mcp-watsonx-tutorial/.venv
 /backup
 /mcp-watsonx-tutorial/mcpgateway
+ * copy.*
+*/* copy.*
