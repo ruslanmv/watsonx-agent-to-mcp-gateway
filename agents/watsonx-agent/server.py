@@ -8,12 +8,12 @@ from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
 
 # ——— Load settings ———
 load_dotenv()  
-API_KEY    = os.getenv("WATSONX_APIKEY")
+API_KEY    = os.getenv("WATSONX_API_KEY")
 URL        = os.getenv("WATSONX_URL")
 PROJECT_ID = os.getenv("PROJECT_ID")
-MODEL_ID   = os.getenv("MODEL_ID", "ibm/granite-13b-instruct-v2")
+MODEL_ID   = os.getenv("MODEL_ID", "ibm/granite-3-3-8b-instruct")
 
-for name,val in [("WATSONX_APIKEY",API_KEY),("WATSONX_URL",URL),("PROJECT_ID",PROJECT_ID)]:
+for name,val in [("WATSONX_API_KEY",API_KEY),("WATSONX_URL",URL),("PROJECT_ID",PROJECT_ID)]:
     if not val:
         raise RuntimeError(f"{name} is not set")
 

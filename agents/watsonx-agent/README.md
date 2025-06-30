@@ -52,7 +52,7 @@
 1. **Clone & enter project**
 
    ```bash
-   git clone https://github.com/your-org/watsonx-agent.git
+   git clone https://github.com/ruslanmv/watsonx-agent.git
    cd watsonx-agent
    ```
 
@@ -82,33 +82,17 @@
 
    The server will listen on **stdin/stdout** speaking MCP.
 
----
 
-## 🔌 HTTP Transport (Optional)
-
-If you prefer HTTP JSON-RPC 2.0 instead of stdio:
-
-1. Install FastAPI & Uvicorn:
+3. Example of query
 
    ```bash
-   pip install fastapi uvicorn
+   python test/test_server.py
    ```
 
-2. Copy `main.py` from the template and configure environment as above.
-
-3. Run:
-
-   ```bash
-   uvicorn main:app --host 0.0.0.0 --port 8080 --reload
-   ```
-
-4. Endpoints:
-
-   * `POST /`          — MCP `tools/call`
-   * `GET  /health`    — `{ "status": "ok" }`
-   * `GET  /version`   — `{ "name": "...", "version": "0.x.x" }`
+![](assets/2025-06-30-22-15-29.png)
 
 ---
+
 
 ## ⚙️ Makefile Targets
 
@@ -140,6 +124,7 @@ make clean         # Remove .venv
    ```
 
    This runs `server.py` as `appuser` over stdio. Map ports or mount volumes as needed.
+
 
 ---
 
@@ -202,15 +187,6 @@ make clean         # Remove .venv
   ```
 
 ---
-
-## 💼 Contributing
-
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feat/xyz`)
-3. Commit your changes & run `make lint fmt test`
-4. Open a Pull Request
-
-
 
 ## 📜 License
 
