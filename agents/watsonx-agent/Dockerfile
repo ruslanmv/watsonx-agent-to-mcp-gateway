@@ -1,14 +1,21 @@
 # Dockerfile
 FROM python:3.11-slim
 
-WORKDIR /app
+# Create a non-root user for better security
+RUN useradd --create-home --shell /bin/bash appuser
+WORKDIR /home/appuser/app
 
+# Copy and install dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir -r requirements.txt
 
-COPY main.py .
+# Copy your agent code
+COPY . .
 
-EXPOSE 8082
+# Fix permissions
+RUN chown -R appuser:appuser /home/appuser/app
+USER appuser
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8082"]
+# Default to running your MCP server over stdio
+ENTRYPOINT ["python", "server.py"]

@@ -6,3 +6,4 @@
  * copy.*
 */* copy.*
 /tmp
+/agents/watsonx-agent/.venv
