@@ -57,13 +57,7 @@ Before we start, make sure you have the following installed on your system.
 ### Project Structure
 
 First, let's set up our project directory.
-
-1.  Create a main folder for the project.
-    ```bash
-    mkdir mcp-watsonx-tutorial
-    cd mcp-watsonx-tutorial
-    ```
-2.  Inside, create folders for the gateway, agents, and frontend.
+1.  Inside, create folders for the gateway, agents, and frontend.
     ```bash
     mkdir mcpgateway
     mkdir agents
@@ -71,7 +65,6 @@ First, let's set up our project directory.
     ```
 3.  Your final structure will look like this:
     ```
-    mcp-watsonx-tutorial/
     ├── mcpgateway/
     ├── agents/
     │   ├── go_time_server/
