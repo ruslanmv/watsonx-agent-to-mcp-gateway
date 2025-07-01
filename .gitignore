@@ -8,3 +8,6 @@
 /tmp
 /agents/watsonx-agent/.venv
 /agents/watsonx-agent/__pycache__
+/agents/hello_world/.venv
+/docs/backup
+/agents/hello_world/__pycache__
