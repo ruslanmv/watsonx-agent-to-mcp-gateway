@@ -402,6 +402,8 @@ curl -s \
 | jq .
 ```
 
+![](assets/2025-07-01-21-34-07.png)
+
 **What this does:**
 
 1. **Activate the virtualenv**
