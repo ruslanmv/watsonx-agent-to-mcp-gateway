@@ -1,4 +1,4 @@
-# How to Add Agents in MCP Gateway: A Step-by-Step Tutorial
+#  Watsonx.ai Agent to MCP Gateway
 
 
 
