@@ -164,10 +164,7 @@ mcp dev hello_server.py
 # Inspector UI: http://localhost:6274
 # Try calling `echo` with “Hello MCP!”
 ```
-
-
-
-
+![](assets/2025-07-01-09-57-29.png)
 
 ### 3) Register via the Admin UI
 
@@ -217,6 +214,7 @@ mcp dev hello_server.py
    2. **Call** its MCP discovery (`mcp.inspect()`) to learn that it exposes the `echo` tool.
    3. **Activate** it—you’ll see `hello-world-agent` appear in your Servers list with a UUID.
 
+![](assets/2025-07-01-15-50-37.png)
 ---
 
 ### 4) Register via HTTP API (alternate)
