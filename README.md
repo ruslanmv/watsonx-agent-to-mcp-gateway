@@ -79,30 +79,87 @@ We assume you have already cloned the repo into `mcpgateway/` and have:
 
 
 
-
-
 ## Generating an Admin JWT
 
-Many admin operations require a short-lived JWT. Generate one as follows:
+Many of the MCP Gateway’s administrative endpoints (for example, listing or registering servers via `/servers`) require a valid, short-lived JWT signed with your `JWT_SECRET_KEY`. You can generate one on your local machine using the built-in `create_jwt_token` utility.
+
+1. **Activate your project venv**
+   Make sure you’re running inside the same Python environment the gateway uses:
+
+   ```bash
+   source ./mcpgateway/.venv/bin/activate
+   ```
+
+2. **Export your admin credentials**
+   Load your `.env` values, or provide sensible defaults:
+
+   ```bash
+   export BASIC_AUTH_USER="${BASIC_AUTH_USER:-admin}"
+   export BASIC_AUTH_PASSWORD="${BASIC_AUTH_PASSWORD:-changeme}"
+   export JWT_SECRET_KEY="${JWT_SECRET_KEY:-my-test-key}"
+   ```
+
+3. **Generate and store the token**
+   Run the following to create a token that’s valid for **60 seconds**:
+
+   ```bash
+   export ADMIN_TOKEN=$(
+     python3 -m mcpgateway.utils.create_jwt_token \
+       --username "$BASIC_AUTH_USER" \
+       --secret   "$JWT_SECRET_KEY" \
+       --exp 60
+   )
+   ```
+
+You can now use `$ADMIN_TOKEN` in your `Authorization: Bearer …` headers for admin requests:
 
 ```bash
-export ADMIN_TOKEN=$(
-  python -m mcpgateway.utils.create_jwt_token \
-    --username "$BASIC_AUTH_USERNAME" \
-    --secret   "$JWT_SECRET_KEY" \
-    --exp 60
-)
+curl -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:4444/servers | jq .
 ```
-Generate your admin JWT:
+
+---
+
+### Full `get_token.sh` Script
 
 ```bash
-export ADMIN_TOKEN=$(
-  python -m mcpgateway.utils.create_jwt_token \
-    --username "$BASIC_AUTH_USERNAME" \
-    --secret   "$JWT_SECRET_KEY" \
-    --exp 60
-)
+#!/usr/bin/env bash
+set -euo pipefail
+
+# -----------------------------------------------------------------------------
+# 1) Activate the project’s Python virtualenv
+# -----------------------------------------------------------------------------
+if [ -f "./mcpgateway/.venv/bin/activate" ]; then
+  # shellcheck disable=SC1090
+  source ./mcpgateway/.venv/bin/activate
+  echo "✅ Activated Python environment"
+else
+  echo "❌ Virtualenv not found at ./mcpgateway/.venv/bin/activate; please run setup first." >&2
+  exit 1
+fi
+
+# -----------------------------------------------------------------------------
+# 2) Load env-vars (or use defaults)
+# -----------------------------------------------------------------------------
+export BASIC_AUTH_USER="${BASIC_AUTH_USER:-admin}"
+export BASIC_AUTH_PASSWORD="${BASIC_AUTH_PASSWORD:-changeme}"
+export JWT_SECRET_KEY="${JWT_SECRET_KEY:-my-test-key}"
+
+# -----------------------------------------------------------------------------
+# 3) Generate and print the JWT (valid for 60 seconds)
+# -----------------------------------------------------------------------------
+python3 -m mcpgateway.utils.create_jwt_token \
+  --username "$BASIC_AUTH_USER" \
+  --secret   "$JWT_SECRET_KEY" \
+  --exp 60
 ```
+
+Save this as `get_token.sh`, make it executable (`chmod +x get_token.sh`), and run:
+
+```bash
+./get_token.sh
+```
+
+It will output a single JWT string you can drop into your `Authorization: Bearer …` header.
 
 
 ### 1) Write your Hello World agent
@@ -217,45 +274,65 @@ mcp dev hello_server.py
 ![](assets/2025-07-01-15-50-37.png)
 ---
 
-### 4) Register via HTTP API (alternate)
 
-If you’d rather script it, you can accomplish exactly the same thing with one `curl`:
+---
 
-```bash
-curl -X POST http://localhost:4444/servers \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-        "name": "hello-world-agent",
-        "description": "A minimal STDIO agent that echoes back input via the `echo` tool",
-        "associatedTools": ["echo"],
-        "associatedResources": [],
-        "associatedPrompts": []
-      }'
-```
+### 4) Verify Your Agent
 
-Then verify:
+To script a one-stop check—activate your venv, mint a JWT, and list all registered servers—save this as `verify_servers.sh`, then `chmod +x verify_servers.sh`:
 
 ```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# 1) Activate the project venv
+if [ -f "./mcpgateway/.venv/bin/activate" ]; then
+  # shellcheck disable=SC1090
+  source ./mcpgateway/.venv/bin/activate
+else
+  echo "❌ Virtualenv not found; please run setup first." >&2
+  exit 1
+fi
+
+# 2) Export credentials (or use defaults)
+export BASIC_AUTH_USER="${BASIC_AUTH_USER:-admin}"
+export BASIC_AUTH_PASSWORD="${BASIC_AUTH_PASSWORD:-changeme}"
+export JWT_SECRET_KEY="${JWT_SECRET_KEY:-my-test-key}"
+
+# 3) Mint a short-lived JWT
+ADMIN_TOKEN=$(
+  JWT_SECRET_KEY="$JWT_SECRET_KEY" \
+    python3 -m mcpgateway.utils.create_jwt_token \
+      --username "$BASIC_AUTH_USER" \
+      --secret   "$JWT_SECRET_KEY" \
+      --exp 60
+)
+echo "✅ Generated ADMIN_TOKEN"
+
+# 4) List all servers
 curl -s \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:4444/servers | jq .
+  http://localhost:4444/servers \
+| jq .
 ```
 
-You should see your `hello-world-agent` entry, `"isActive": true`, and under `tools` an array with `"echo"`.
+Running `./verify_servers.sh` will print the JSON array of all your registered agents—confirming that **hello-world-agent** is active.
 
 ---
 
 ### 5) Try it out
 
-Now any MCP-aware client can do:
+Now that your agent is both registered and active, any MCP-aware client can invoke its `echo` tool. For example, with the `mcp` CLI:
 
 ```bash
-mcp call --server http://localhost:4444 servers/<your-agent-uuid> echo "Hello, MCP!"
+mcp call \
+  --server http://localhost:4444 \
+  servers/<your-agent-uuid> \
+  echo "Hello, MCP!"
 # → "Hello, MCP!"
 ```
 
-Or via raw HTTP:
+Or directly via raw HTTP:
 
 ```bash
 curl -X POST http://localhost:4444/ \
@@ -264,14 +341,82 @@ curl -X POST http://localhost:4444/ \
         "jsonrpc":"2.0",
         "method":"tools/call",
         "params":{
+          "serverId":"<your-agent-uuid>",
           "name":"echo",
           "arguments":{"text":"Hello, MCP!"}
         },
         "id":1
       }'
+# → {"jsonrpc":"2.0","result":"Hello, MCP!","id":1}
 ```
 
----
+
+
+### 4) Verify Your Agent
+
+Once your **hello-world-agent** is registered, you can verify it by generating an admin JWT and listing all servers via the Gateway’s HTTP API. Save the following as `verify_servers.sh`, make it executable (`chmod +x verify_servers.sh`), and run it from your project root:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# -----------------------------------------------------------------------------
+# 1) Activate the project’s Python virtualenv
+# -----------------------------------------------------------------------------
+if [ -f "./mcpgateway/.venv/bin/activate" ]; then
+  # shellcheck disable=SC1090
+  source ./mcpgateway/.venv/bin/activate
+  echo "✅ Activated Python environment from ./mcpgateway/.venv/bin/activate"
+else
+  echo "❌ Virtualenv not found at ./mcpgateway/.venv/bin/activate; please run your setup/start scripts first."
+  exit 1
+fi
+
+# -----------------------------------------------------------------------------
+# 2) Ensure env-vars are set (fall back to defaults if not)
+# -----------------------------------------------------------------------------
+export BASIC_AUTH_USER="${BASIC_AUTH_USER:-admin}"
+export BASIC_AUTH_PASSWORD="${BASIC_AUTH_PASSWORD:-changeme}"
+export JWT_SECRET_KEY="${JWT_SECRET_KEY:-my-test-key}"
+
+# -----------------------------------------------------------------------------
+# 3) Generate a short-lived JWT using the gateway’s utility
+# -----------------------------------------------------------------------------
+echo "🔑 Generating JWT token…"
+ADMIN_TOKEN=$(
+  JWT_SECRET_KEY="$JWT_SECRET_KEY" \
+    python3 -m mcpgateway.utils.create_jwt_token \
+      --username "$BASIC_AUTH_USER" \
+      --exp 60 \
+      --secret "$JWT_SECRET_KEY"
+)
+export ADMIN_TOKEN
+
+# -----------------------------------------------------------------------------
+# 4) Call the /servers endpoint with Bearer auth
+# -----------------------------------------------------------------------------
+echo "🌐 Querying /servers with Bearer token…"
+curl -s \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:4444/servers \
+| jq .
+```
+
+**What this does:**
+
+1. **Activate the virtualenv**
+   Ensures you’re using the same Python environment (and MCP Gateway libraries) that are installed under `mcpgateway/.venv/`.
+
+2. **Load credentials**
+   Exports `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD`, and your `JWT_SECRET_KEY`—falling back to `admin`, `changeme`, and `my-test-key` if not already set in your shell.
+
+3. **Generate a JWT**
+   Uses the built-in `mcpgateway.utils.create_jwt_token` module to mint a token valid for 60 seconds, signing it with your `JWT_SECRET_KEY`. This token is required for all admin-level HTTP calls.
+
+4. **List registered servers**
+   Sends a `GET /servers` request with `Authorization: Bearer …`. The JSON output will include your new **hello-world-agent** (alongside its UUID, name, and exposed tools), confirming that the Gateway sees and manages your agent correctly.
+
+
 
 ### 6) Next up: Watsonx.ai Agent 
 
