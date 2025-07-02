@@ -11,3 +11,8 @@
 /agents/hello_world/.venv
 /docs/backup
 /agents/hello_world/__pycache__
+/agents/example/__pycache__
+/agents/example/backup
+copy *
+* copy *
+* copy.*
