@@ -38,28 +38,28 @@ if [[ -z "$SERVER_ID" ]]; then
 fi
 echo "✅ Agent found! SERVER_ID=${SERVER_ID}"
 
-# 5) Invoke the agent's 'chat' tool directly
-echo "💬 Calling the agent's 'chat' tool..."
+# 5) Invoke the agent and capture the response
+echo "💬 Calling the agent..."
 RESPONSE=$(
   curl -s -u "$BASIC_AUTH_USER:$BASIC_AUTH_PASSWORD" \
        -H "Authorization: Bearer $ADMIN_TOKEN" \
-       -X POST "http://localhost:4444/protocol" \
+       -X POST "http://localhost:4444/protocol/sampling/createMessage" \
        -H "Content-Type: application/json" \
        -d '{
              "jsonrpc": "2.0",
              "id":      1,
-             "method":  "tool/run",
+             "method":  "sampling/createMessage",
              "params": {
                "serverId": "'"$SERVER_ID"'",
-               "toolName": "watsonx-demo-agent-chat	",
-               "inputs": {
-                 "query": "Tell me a joke."
-               }
+               "messages": [
+                 { "role": "user", "content": { "text": "Tell me a joke." } }
+               ]
              }
            }'
 )
 
-# 6) Validate and parse the response
+# 6) NEW: Validate the response before parsing with jq
+# Check if the response is empty or doesn't start with '{', which suggests it's not JSON.
 if [[ -z "$RESPONSE" || "${RESPONSE:0:1}" != "{" ]]; then
     echo
     echo "❌ Error: The server returned an unexpected, non-JSON response."
