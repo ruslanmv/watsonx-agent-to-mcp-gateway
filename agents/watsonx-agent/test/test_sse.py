@@ -7,8 +7,8 @@ import logging
 
 # --- Configuration ---
 # This should match the port your server.py is running on.
-# FastMCP defaults to 6278 if not specified.
-PORT = 6278
+# FastMCP defaults to 6288 if not specified.
+PORT = 6288
 SERVER_URL = f"http://127.0.0.1:{PORT}/sse"
 SAMPLE_QUERY = "What are the main attractions in Rome?"
 
