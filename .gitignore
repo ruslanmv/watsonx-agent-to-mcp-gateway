@@ -16,3 +16,4 @@
 copy *
 * copy *
 * copy.*
+*.db
