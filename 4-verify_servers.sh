@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#4-verify_servers.sh
 set -euo pipefail
 
 # 1) Activate the project venv

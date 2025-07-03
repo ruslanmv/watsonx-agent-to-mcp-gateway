@@ -1,5 +1,5 @@
-# Stop-MCP-Gateway.sh
 #!/usr/bin/env bash
+# 7-Stop-MCP-Gateway.sh
 set -euo pipefail
 
 # Try to find and kill any running mcpgateway processes
