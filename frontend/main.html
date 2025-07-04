@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Gateway Chat</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0;
+            padding: 0;
+            background-image: url('/static/watsonx-wallpaper.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+        .top-bar {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            /* --- Style Changes for Alignment --- */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .admin-button {
+            background-color: #0078d4;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .admin-button:hover {
+            background-color: #005a9e;
+        }
+        #chat-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #chat-container { 
+            max-width: 700px;
+            width: 100%;
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px; 
+            box-shadow: 0 2px 15px rgba(0,0,0,0.2); 
+            padding: 20px; 
+            backdrop-filter: blur(5px);
+        }
+        /* --- Style Changes for Controls in Top Bar --- */
+        .controls {
+            margin-bottom: 0; /* Remove bottom margin */
+        }
+        .controls label {
+            font-weight: bold;
+            margin-right: 10px;
+            color: white; /* Make label text visible on dark bar */
+        }
+        #agent-select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            min-width: 200px;
+            background-color: #f0f2f5;
+        }
+        #messages { 
+            height: 400px; 
+            overflow-y: scroll; 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            margin-bottom: 10px; 
+            border-radius: 6px; 
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+        .message { margin-bottom: 15px; white-space: pre-wrap; }
+        .user-message { text-align: right; color: #0050be; }
+        .bot-message { text-align: left; color: #333; }
+        .error-message { text-align: left; color: #d9534f; font-style: italic; }
+        #input-form { display: flex; }
+        #input-box { flex-grow: 1; border: 1px solid #ccc; padding: 10px; border-radius: 6px; }
+        #send-button { 
+            background-color: #0078d4; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            margin-left: 10px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+        }
+        #send-button:disabled { background-color: #aaa; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <!-- Agent selection moved here -->
+        <div class="controls">
+            <label for="agent-select">Choose Agent:</label>
+            <select id="agent-select" name="agent"></select>
+        </div>
+        <a href="http://localhost:4444/admin/" target="_blank" class="admin-button">Admin</a>
+    </div>
+
+    <div id="chat-wrapper">
+        <div id="chat-container">
+            <h1>Chat with an Agent via MCP Gateway</h1>
+            
+            <!-- Controls div removed from here -->
+
+            <div id="messages"></div>
+            <form id="input-form">
+                <input type="text" id="input-box" placeholder="Ask something..." autocomplete="off" disabled>
+                <button type="submit" id="send-button" disabled>Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('input-form');
+        const inputBox = document.getElementById('input-box');
+        const messagesDiv = document.getElementById('messages');
+        const sendButton = document.getElementById('send-button');
+        const agentSelect = document.getElementById('agent-select');
+
+        const AGENTS_URL = '/agents';
+        const CALL_URL = '/call';
+
+        // --- Message Display Helper ---
+        function addMessage(text, className) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${className}`;
+            msgDiv.textContent = text;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // --- Load Agents on Startup ---
+        async function loadAgents() {
+            // No longer need to add a loading message to the chat box
+            // as the select element will be populated directly.
+            try {
+                const response = await fetch(AGENTS_URL);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to fetch agents.');
+                }
+                const agents = await response.json();
+                
+                agentSelect.innerHTML = '<option value="">-- Select an Agent --</option>';
+
+                if (agents.length === 0) {
+                    addMessage('No active agents found on the gateway.', 'error-message');
+                    return;
+                }
+
+                agents.forEach(agent => {
+                    const option = document.createElement('option');
+                    option.value = agent.name;
+                    option.textContent = agent.name;
+                    agentSelect.appendChild(option);
+                });
+                addMessage('Please select an agent from the top bar to begin.', 'bot-message');
+
+            } catch (error) {
+                console.error('Error loading agents:', error);
+                messagesDiv.innerHTML = '';
+                addMessage(`Error: ${error.message}`, 'error-message');
+            }
+        }
+
+        // --- Enable/Disable Chat based on Agent Selection ---
+        agentSelect.addEventListener('change', () => {
+            const hasSelection = !!agentSelect.value;
+            inputBox.disabled = !hasSelection;
+            sendButton.disabled = !hasSelection;
+            if (hasSelection) {
+                messagesDiv.innerHTML = '';
+                addMessage(`You are now chatting with ${agentSelect.value}.`, 'bot-message');
+                inputBox.focus();
+            } else {
+                messagesDiv.innerHTML = '';
+                addMessage('Please select an agent from the top bar to begin.', 'bot-message');
+            }
+        });
+
+        // --- Form Submission Handler ---
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userInput = inputBox.value.trim();
+            const selectedAgent = agentSelect.value;
+
+            if (!userInput || !selectedAgent) return;
+
+            addMessage(userInput, 'user-message');
+            inputBox.value = '';
+            sendButton.disabled = true;
+            inputBox.disabled = true;
+
+            try {
+                const response = await fetch(CALL_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tool: `${selectedAgent}/chat`, // Construct tool name from selected agent
+                        args: { prompt: userInput }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                addMessage(data.result, 'bot-message');
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage(`Sorry, something went wrong: ${error.message}`, 'error-message');
+            } finally {
+                sendButton.disabled = false;
+                inputBox.disabled = false;
+                inputBox.focus();
+            }
+        });
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', loadAgents);
+    </script>
+
+</body>
+</html>
