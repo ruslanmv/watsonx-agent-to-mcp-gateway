@@ -59,7 +59,7 @@ git checkout d5a5019a6b0622f81728cc5a25bbdbcb3d5b3735
 ```
 
 2.   Create a virtual environment in ./.venv
-    
+
 ```bash
 python3 -m venv .venv
 ```
@@ -106,11 +106,14 @@ mcpgateway --host 0.0.0.0 --port 4444 &
 
 By default the CLI binds to 127.0.0.1:4444, user admin, pass admin. Let’s override that:
 
-You can open a browser and enter to 
 
-[http://localhost:4444/admin/](http://localhost:4444/admin/)
-Username: `admin`
-Password: `changeme`
+
+Now, let's take a peek inside the Gateway's control room. Point your browser to 
+
+[http://localhost:4444/admin/](http://localhost:4444/admin/)  and log in with the username **admin** and password **changeme**.
+
+
+
 ![](assets/2025-07-04-11-13-29.png)
 and you will get
 
