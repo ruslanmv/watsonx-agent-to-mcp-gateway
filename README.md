@@ -46,13 +46,15 @@ By using MCP and the Gateway, you replace brittle, custom integrations with a ro
 ```bash
 git clone https://github.com/IBM/mcp-context-forge.git mcpgateway
 ```
-    and enter to the directory
+and enter to the directory
 
 ```bash
 cd mcpgateway
 ```
-    For this demo I have used the commit 
-  ```bash
+
+For this demo I have used the commit 
+
+```bash
 git checkout d5a5019a6b0622f81728cc5a25bbdbcb3d5b3735
 ```
 
