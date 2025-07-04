@@ -575,7 +575,7 @@ if __name__ == "__main__":
   ```
   python server_sse.py
   ```
-![](assets/2025-07-01-22-54-09.png)
+![](assets/2025-07-04-09-18-27.png)
   or with the MCP Inspector:
 
    ```bash
@@ -586,7 +586,6 @@ if __name__ == "__main__":
 ```bash
 mcp dev server_sse.py --inspect-port 6280 --proxy-port 6281
 ```
-
 
 ![](assets/2025-07-01-22-58-18.png)
 
