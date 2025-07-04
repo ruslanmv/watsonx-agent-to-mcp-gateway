@@ -17,5 +17,5 @@ COPY . .
 RUN chown -R appuser:appuser /home/appuser/app
 USER appuser
 
-# Default to running your MCP server over stdio
-ENTRYPOINT ["python", "server.py"]
+# Default to running your MCP server over sse
+ENTRYPOINT ["python", "server_sse.py"]
