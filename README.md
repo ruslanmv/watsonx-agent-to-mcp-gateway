@@ -42,37 +42,43 @@ By using MCP and the Gateway, you replace brittle, custom integrations with a ro
 ### Step 1: Set up the MCP Gateway
 
 1.  Clone the official MCP Gateway repository into the `mcpgateway` folder.
-    ```bash
-    git clone https://github.com/IBM/mcp-context-forge.git mcpgateway
-    ```
+
+```bash
+git clone https://github.com/IBM/mcp-context-forge.git mcpgateway
+```
     and enter to the directory
-    ```bash
-    cd mcpgateway
-    ```
+
+```bash
+cd mcpgateway
+```
     For this demo I have used the commit 
-     ```bash
-    git checkout d5a5019a6b0622f81728cc5a25bbdbcb3d5b3735
-    ```
+  ```bash
+git checkout d5a5019a6b0622f81728cc5a25bbdbcb3d5b3735
+```
 
 2.   Create a virtual environment in ./.venv
     
-    ```bash
-    python3 -m venv .venv
-    ```
+```bash
+python3 -m venv .venv
+```
 3.  Activate it and upgrade pip
-    ```bash
-        source .venv/bin/activate
-        pip install --upgrade pip
-    ```
+
+```bash
+    source .venv/bin/activate
+    pip install --upgrade pip
+```
 4.  Install the dependencies.
-    ```bash
-    pip install -e .
-    ```
+
+```bash
+pip install -e .
+```
+
 5. Configure credentials  `.env` in your gateway directory containing at least:
-    ```bash
-    export BASIC_AUTH_USERNAME=admin
-    export BASIC_AUTH_PASSWORD=changeme
-    export JWT_SECRET_KEY=my-test-key
+
+```bash
+export BASIC_AUTH_USERNAME=admin
+export BASIC_AUTH_PASSWORD=changeme
+export JWT_SECRET_KEY=my-test-key
 ```
 
 
@@ -95,6 +101,7 @@ Start the **MCP Gateway** up and running on `HOST:PORT`  (default `0.0.0.0:4444`
 ```bash
 mcpgateway --host 0.0.0.0 --port 4444 &
 ```
+
 By default the CLI binds to 127.0.0.1:4444, user admin, pass admin. Let’s override that:
 
 
@@ -112,7 +119,6 @@ You can generate and use one on your local machine in four simple steps:
 
    ```bash
    source ./mcpgateway/.venv/bin/activate
-
    ```
 
 2. **Export your admin credentials**
@@ -234,7 +240,7 @@ if __name__ == "__main__":
     mcp.run(transport="sse")                  # ⭐  key line: use SSE
 ```
 
----
+
 
 ### 2 Run it locally
 
@@ -302,8 +308,6 @@ The response pane shows:
   combine into virtual servers or call via the Gateway’s `/rpc` endpoint.
 
 
-
-
 ### 5 Publish in the Virtual Servers Catalog
 
 Once your Hello World agent is federated as an MCP Server (under **Federated Gateways**) and its `echo` tool appears in the **Global Tools** catalog, the final step is to bundle it into a **Virtual Server**—a single endpoint that exposes one or more tools (and any resources or prompts) under your own chosen name.
@@ -316,15 +320,17 @@ Once your Hello World agent is federated as an MCP Server (under **Federated Gat
    * **Icon URL**: (leave blank or supply a link to a 64×64 PNG)
    * **Associated Tools**: select both
 
-     ```
-     watsonx-agent-chat
-     hello-world-dev-echo
-     ```
+    ```
+    watsonx-agent-chat
+    hello-world-dev-echo
+    ```
+
    * **Associated Resources**: type the resource IDs you registered earlier, comma-separated, e.g.
 
      ```
      hello-world-dev
      ```
+
    * **Associated Prompts**: leave empty for this demo
 3. **Click** **Add Server**.
 
@@ -430,7 +436,6 @@ The `"content"` array holds the structured tool output. In this demo the
 tool returned `{"reply":"Hello, world!"}` and the Gateway wrapped it in an
 MCP-compliant notification envelope.
 
----
 
 With that, you have:
 
@@ -438,7 +443,6 @@ With that, you have:
 2. **Federated** it into the MCP Gateway
 3. **Bundled** it into a Virtual Server
 4. **Invoked** its tool via a simple CLI script
-
 
 
 
@@ -500,7 +504,7 @@ Now let’s build and register a real-world agent that wraps IBM Watsonx.ai.
 
 5. **Write `server_sse.py`** (stdio transport):
 
-   ```python
+```python
 # server.py  – lenient Watsonx agent
 import os, logging
 from typing import Union
@@ -563,7 +567,7 @@ if __name__ == "__main__":
     logging.info(f"Starting Watsonx MCP server at http://127.0.0.1:{PORT}/sse")
     mcp.run(transport="sse")   # SSE endpoint is /sse
 
-   ```
+```
 
 6. **Test Locally** 
   ```
@@ -577,9 +581,9 @@ if __name__ == "__main__":
    # Inspector UI: http://localhost:6274
    ```
  Or tell mcp dev to use different ports
- ```bash
-  mcp dev server_sse.py --inspect-port 6280 --proxy-port 6281
-   ```
+```bash
+mcp dev server_sse.py --inspect-port 6280 --proxy-port 6281
+```
 
 
 ![](assets/2025-07-01-22-58-18.png)
@@ -591,6 +595,30 @@ if __name__ == "__main__":
 Save and run `verify_watsonx.sh` to ensure your server is active and serving the `chat` tool:
 
 ```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# 1) Activate venv
+source ./mcpgateway/.venv/bin/activate
+
+# 2) Ensure creds
+export BASIC_AUTH_USER="${BASIC_AUTH_USER:-admin}"
+export JWT_SECRET_KEY="${JWT_SECRET_KEY:-my-test-key}"
+
+# 3) Mint JWT
+ADMIN_TOKEN=$(
+  JWT_SECRET_KEY="$JWT_SECRET_KEY" \
+    python3 -m mcpgateway.utils.create_jwt_token \
+      --username "$BASIC_AUTH_USER" \
+      --secret   "$JWT_SECRET_KEY" \
+      --exp      60
+)
+
+# 4) List servers & their tools
+curl -s \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:4444/servers \
+| jq .
 
 ```
 ![](assets/2025-07-02-08-40-42.png)
@@ -614,7 +642,7 @@ Virtual Servers let you combine Tools, Resources, and Prompts from the global To
 
 Before the MCP Gateway can see our agent, we need to get it running and confirm it works on its own.
 
-### 1\. Start the Watsonx Agent
+### 1. Start the Watsonx Agent
 
 This script navigates to the agent's directory, activates its dedicated Python virtual environment, and starts the SSE (Server-Sent Events) server, which will listen for requests from the Gateway.
 
@@ -645,7 +673,7 @@ echo "Server has been stopped."
 
 Run this script and leave it running in a terminal. It is now ready to be registered.
 
-### 2\. Run Local Tests
+### 2. Run Local Tests
 
 It's always good practice to run local tests to ensure the agent's logic is sound before connecting it to the Gateway. This script runs the agent's internal test suite.
 
@@ -714,7 +742,7 @@ Now that our agent is running, we'll register it in the Gateway using the Admin 
 
 With the agent running and registered, we can now interact with it through the Gateway.
 
-### 1\. Verify Registration via API
+### 1. Verify Registration via API
 
 You can programmatically verify that the Gateway sees your new virtual server. This script mints a temporary admin token and uses it to list all active servers.
 
@@ -905,11 +933,6 @@ bash query-agent.sh
 💡 LLM reply text:
 I'm an artificial intelligence and don't have feelings, but I'm here and ready to assist you. How can I help you today?
 ```
-
-
-
-
-
 
 
 ## Phase 4: Adding a Web Frontend
