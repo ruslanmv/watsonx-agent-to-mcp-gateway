@@ -8,7 +8,7 @@ Tools exposed
 
 Run
 ───
-pip install "mcp[fastapi]" uvicorn
+
 python server.py            # port 6278 by default
 """
 
