@@ -23,6 +23,6 @@ source .venv/bin/activate || { echo "Error: Failed to activate the virtual envir
 echo "Starting the watsonx-agent server..."
 # Run the Python server.
 # The script will continue to run this command until it is manually stopped (e.g., with Ctrl+C).
-python sse.py
+python server_sse.py
 
 echo "Server has been stopped."
